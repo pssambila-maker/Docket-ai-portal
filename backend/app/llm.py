@@ -20,12 +20,10 @@ MODEL_PROVIDERS = {
     "gpt-3.5-turbo": "openai",
     "o1-preview": "openai",
     "o1-mini": "openai",
-    # Anthropic models
-    "claude-3-5-sonnet-20241022": "anthropic",
-    "claude-3-5-haiku-20241022": "anthropic",
-    "claude-3-opus-20240229": "anthropic",
-    "claude-3-sonnet-20240229": "anthropic",
-    "claude-3-haiku-20240307": "anthropic",
+    # Anthropic models (current as of 2026)
+    "claude-sonnet-4-5-20250929": "anthropic",
+    "claude-opus-4-1-20250805": "anthropic",
+    "claude-haiku-3-5-20241022": "anthropic",
     # Google models (Gemini 2.0+)
     "gemini-2.0-flash": "google",
     "gemini-2.0-flash-lite": "google",
@@ -229,14 +227,12 @@ def get_available_models() -> list[str]:
             "gpt-3.5-turbo",
         ])
 
-    # Anthropic models
+    # Anthropic models (current as of 2026)
     if settings.anthropic_api_key:
         models.extend([
-            "claude-3-5-sonnet-20241022",
-            "claude-3-5-haiku-20241022",
-            "claude-3-opus-20240229",
-            "claude-3-sonnet-20240229",
-            "claude-3-haiku-20240307",
+            "claude-sonnet-4-5-20250929",
+            "claude-opus-4-1-20250805",
+            "claude-haiku-3-5-20241022",
         ])
 
     # Google models (Gemini 2.0+)
