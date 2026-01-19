@@ -85,7 +85,28 @@ export async function login(email: string, password: string): Promise<ApiRespons
   }
 }
 
-export async function getMe(): Promise<ApiResponse<User>> {
+export async function getMe(token?: string): Promise<ApiResponse<User>> {
+  if (token) {
+    // Use provided token directly
+    try {
+      const response = await fetch(`${API_BASE}/auth/me`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        return { error: errorData.detail || `Error: ${response.status}` };
+      }
+
+      const data = await response.json();
+      return { data };
+    } catch (err) {
+      return { error: 'Network error. Please try again.' };
+    }
+  }
   return request<User>('/auth/me');
 }
 

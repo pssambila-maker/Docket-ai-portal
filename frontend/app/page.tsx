@@ -28,8 +28,8 @@ export default function Home() {
   }, [])
 
   const handleLogin = (token: string) => {
-    // Fetch user info after login
-    getMe().then((result) => {
+    // Fetch user info after login using the token directly
+    getMe(token).then((result) => {
       if (result.data) {
         setUser(result.data)
       }
