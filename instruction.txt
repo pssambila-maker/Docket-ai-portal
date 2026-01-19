@@ -1,0 +1,225 @@
+Goal
+Build an AI Portal MVP on your local PC (Docker Desktop) with:
+•	Web UI (chat + model picker)
+•	Backend API (auth, routing to LLM, logging)
+•	Postgres DB (users, chats, audit/usage)
+•	Optional Redis (sessions/rate-limit later)
+•	One-command local run: docker compose up --build
+Migration-ready rule: Everything is containerized, stateless, configurable via env vars.
+________________________________________
+What You’ll Install/Enable (local prerequisites)
+1.	VS Code extensions:
+o	Docker
+o	Dev Containers
+o	FastAPI
+________________________________________
+Project Stack (strong default)
+•	Frontend: Next.js (simple chat UI)
+•	Backend: FastAPI (Python)
+•	DB: Postgres
+•	Gateway: Nginx (single entrypoint)
+•	Auth (MVP): email + password (JWT)
+This is enterprise-standard enough for credibility, but still MVP-friendly.
+________________________________________
+Folder Structure (final repo layout)
+Connect to repo:
+https://github.com/pssambila-maker/Docket-ai-portal /
+  docker-compose.yml
+  .env.example
+  README.md
+
+  gateway/
+    nginx.conf
+
+  backend/
+    Dockerfile
+    requirements.txt
+    app/
+      main.py
+      auth.py
+      llm.py
+      db.py
+      models.py
+      schemas.py
+      settings.py
+    alembic/ (optional later)
+
+  frontend/
+    Dockerfile
+    package.json
+    next.config.js
+    app/ (Next.js app router)
+      page.tsx
+      components/
+        Chat.tsx
+        Login.tsx
+
+  db/
+    init.sql (optional)
+________________________________________
+Phase 1 — Local MVP (Docker Desktop)
+Step 1: Create the repo + files
+In VS Code:
+•	Create the folder ai-portal
+•	Add the structure above (empty files are fine initially)
+Step 2: Define environment variables
+Create .env.example:
+•	POSTGRES_USER=aiportal
+•	POSTGRES_PASSWORD=change_me
+•	POSTGRES_DB=aiportal
+•	DATABASE_URL=postgresql+psycopg://aiportal:change_me@db:5432/aiportal
+•	JWT_SECRET=change_me_to_long_random
+•	JWT_EXPIRE_MINUTES=120
+•	LLM_PROVIDER=openai (or azure_openai later)
+•	OPENAI_API_KEY=your_key_here
+•	OPENAI_MODEL=gpt-4o-mini (example)
+Local rule: You’ll copy .env.example to .env and fill real values.
+Never commit .env.
+Step 3: Write docker-compose.yml (multi-service local stack)
+Your compose should define:
+•	db (postgres + volume)
+•	backend (FastAPI)
+•	frontend (Next.js)
+•	gateway (nginx routing /api to backend and / to frontend)
+Local ports
+•	Only expose gateway:8080 to your PC
+•	DB stays internal (unless you need to connect with pgAdmin)
+Step 4: Implement Backend endpoints (FastAPI)
+Backend responsibilities:
+•	Auth:
+o	POST /auth/register
+o	POST /auth/login
+•	Chat:
+o	POST /chat → calls LLM provider
+•	Health:
+o	GET /healthz
+DB tables (minimum):
+•	users (id, email, password_hash, role, created_at)
+•	chat_logs (id, user_id, prompt, response, model, created_at)
+•	usage_logs (optional early: just log tokens/cost estimate if available)
+Step 5: Implement Frontend UI (Next.js)
+Frontend:
+•	Login page (store JWT in memory or localStorage for MVP)
+•	Chat page:
+o	input prompt
+o	model dropdown (basic)
+o	send → POST /api/chat
+o	render response
+Step 6: Nginx gateway config
+•	/api/* → backend
+•	/ → frontend
+This gives you “one entrypoint,” which mirrors production patterns.
+Step 7: Run locally
+From repo root:
+•	docker compose up --build
+Confirm:
+•	Open http://localhost:8080
+•	Register user
+•	Login
+•	Send a chat prompt
+•	See response + log saved in Postgres
+________________________________________
+Phase 2 — Hardening Locally (so you’re “cloud-ready”)
+Add these BEFORE you host it anywhere:
+1) Health checks + dependency waiting
+•	Backend: /healthz
+•	Compose healthchecks for db/backend
+•	Backend should retry DB connection on startup
+2) Logging & audit
+Backend logs:
+•	user_id
+•	endpoint
+•	model
+•	success/failure
+•	latency (basic time measurement)
+3) Rate limiting (optional)
+Use Redis + a simple limiter:
+•	max N requests per minute per user
+4) Basic admin controls
+•	role = admin or user
+•	admin can enable/disable paid models per user
+5) PII safety layer (strongly recommended)
+At minimum:
+•	Detect and block likely secrets/PII (SSNs, credit cards, passwords)
+•	Warn user + don’t send to LLM
+This becomes a key “enterprise” talking point.
+________________________________________
+Claude Code + VS Code Workflow (the way to build fast)
+How you’ll run it
+You will give Claude tasks in small chunks, not “build everything.”
+Use this exact pattern:
+1.	“Create docker-compose and Dockerfiles”
+2.	“Implement backend auth + DB models”
+3.	“Implement chat endpoint + LLM provider wrapper”
+4.	“Implement frontend login + chat”
+5.	“Implement nginx routing”
+6.	“Add tests + healthchecks”
+Your rule of thumb
+•	Claude writes code
+•	You run: docker compose up --build
+•	Claude fixes errors based on your logs
+________________________________________
+Copy/Paste Claude Code Tasks (use in VS Code)
+Task 1 — Project scaffolding
+Ask Claude:
+•	Create the folder structure shown.
+•	Generate docker-compose.yml, backend/Dockerfile, frontend/Dockerfile, gateway/nginx.conf
+•	Add .env.example and .gitignore (ignore .env, node_modules, etc.)
+•	Provide run steps.
+Task 2 — Backend MVP
+Ask Claude:
+•	Build a FastAPI app with:
+o	SQLAlchemy models for users + chat_logs
+o	Password hashing
+o	JWT auth middleware/dependency
+o	/auth/register, /auth/login, /chat, /healthz
+•	LLM wrapper file supports OpenAI with env vars.
+•	Save all prompts/responses to Postgres.
+Task 3 — Frontend MVP
+Ask Claude:
+•	Next.js UI with:
+o	Login form
+o	Chat page
+o	Calls to /api/auth/login, /api/chat
+o	Displays model dropdown
+•	Minimal styling, readable layout.
+Task 4 — Local tests + validation
+Ask Claude:
+•	Add backend tests for:
+o	register/login
+o	chat endpoint (mock LLM call)
+•	Add a “smoke test” script or instructions
+Task 5 — Hardening checklist
+Ask Claude:
+•	Add health checks in compose
+•	Add structured logging
+•	Add basic rate limiting (optional)
+•	Add PII guard layer (basic patterns)
+•	Update README with “local run + troubleshooting”
+________________________________________
+Testing Checklist (local)
+Before you even think about cloud:
+1.	docker compose up --build works cleanly
+2.	Restart works without losing DB data (volume works)
+3.	Auth works (JWT expires)
+4.	Chat works for 10+ prompts
+5.	Logs saved in DB
+6.	Health endpoints return OK
+7.	.env never committed
+________________________________________
+Troubleshooting Patterns (common Docker Desktop issues)
+•	Port already in use → change gateway port to 8081
+•	Slow file mounts on Windows → use WSL2 + keep repo in Linux filesystem (best)
+•	DB connection refused → backend started before DB; add healthchecks/retry logic
+•	CORS issues → gateway approach avoids most of it by routing /api
+________________________________________
+What “Done” Looks Like (local MVP demo)
+You can demo to your company (even before hosting):
+•	Open portal in browser
+•	Login
+•	Ask questions
+•	Show audit trail in DB
+•	Show you can switch model tier
+•	Show PII guard blocks unsafe content
+That’s a professional story.
+
