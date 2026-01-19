@@ -12,22 +12,20 @@ settings = get_settings()
 
 # Model to provider mapping
 MODEL_PROVIDERS = {
-    # OpenAI models
+    # OpenAI models (GPT-5.x series - Jan 2026)
+    "gpt-5.2": "openai",
+    "gpt-5.2-pro": "openai",
+    "gpt-5-mini": "openai",
     "gpt-4o": "openai",
     "gpt-4o-mini": "openai",
-    "gpt-4-turbo": "openai",
-    "gpt-4": "openai",
-    "gpt-3.5-turbo": "openai",
-    "o1-preview": "openai",
-    "o1-mini": "openai",
-    # Anthropic models (current as of 2026)
+    # Anthropic models (Jan 2026)
+    "claude-opus-4-5-20251101": "anthropic",
     "claude-sonnet-4-5-20250929": "anthropic",
-    "claude-opus-4-1-20250805": "anthropic",
     "claude-haiku-3-5-20241022": "anthropic",
-    # Google models (Gemini 2.0+)
+    # Google models (Jan 2026)
+    "gemini-2.5-flash": "google",
+    "gemini-2.5-pro": "google",
     "gemini-2.0-flash": "google",
-    "gemini-2.0-flash-lite": "google",
-    "gemini-2.5-flash-lite": "google",
 }
 
 
@@ -117,12 +115,21 @@ class MultiLLMProvider:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
 
-        response = self.openai_client.chat.completions.create(
-            model=model,
-            messages=messages,
-            max_tokens=max_tokens,
-            temperature=temperature,
-        )
+        # GPT-5.x models use max_completion_tokens instead of max_tokens
+        if model.startswith("gpt-5"):
+            response = self.openai_client.chat.completions.create(
+                model=model,
+                messages=messages,
+                max_completion_tokens=max_tokens,
+                temperature=temperature,
+            )
+        else:
+            response = self.openai_client.chat.completions.create(
+                model=model,
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=temperature,
+            )
 
         response_text = response.choices[0].message.content
         prompt_tokens = response.usage.prompt_tokens
@@ -217,30 +224,30 @@ def get_available_models() -> list[str]:
     """Get list of available models based on configured API keys."""
     models = []
 
-    # OpenAI models
+    # OpenAI models (GPT-5.x series - Jan 2026)
     if settings.openai_api_key:
         models.extend([
+            "gpt-5.2",
+            "gpt-5.2-pro",
+            "gpt-5-mini",
             "gpt-4o",
             "gpt-4o-mini",
-            "gpt-4-turbo",
-            "gpt-4",
-            "gpt-3.5-turbo",
         ])
 
-    # Anthropic models (current as of 2026)
+    # Anthropic models (Jan 2026)
     if settings.anthropic_api_key:
         models.extend([
+            "claude-opus-4-5-20251101",
             "claude-sonnet-4-5-20250929",
-            "claude-opus-4-1-20250805",
             "claude-haiku-3-5-20241022",
         ])
 
-    # Google models (Gemini 2.0+)
+    # Google models (Jan 2026)
     if settings.google_api_key:
         models.extend([
+            "gemini-2.5-flash",
+            "gemini-2.5-pro",
             "gemini-2.0-flash",
-            "gemini-2.0-flash-lite",
-            "gemini-2.5-flash-lite",
         ])
 
     return models if models else ["gpt-4o-mini"]  # Fallback
