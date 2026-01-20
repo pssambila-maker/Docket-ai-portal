@@ -31,6 +31,15 @@ class Settings(BaseSettings):
     # Google AI (optional)
     google_api_key: str = ""
 
+    # Groq (free tier - fast inference)
+    groq_api_key: str = ""
+
+    # OpenRouter (multi-model access)
+    openrouter_api_key: str = ""
+
+    # Ollama (local models)
+    ollama_base_url: str = ""
+
     model_config = {
         "env_file": ".env",
         "case_sensitive": False,
