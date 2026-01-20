@@ -7,6 +7,7 @@ import styles from './Chat.module.css'
 interface ChatProps {
   user: User
   onLogout: () => void
+  onAdminClick?: () => void
 }
 
 interface Message {
@@ -17,7 +18,7 @@ interface Message {
   timestamp: Date
 }
 
-export default function Chat({ user, onLogout }: ChatProps) {
+export default function Chat({ user, onLogout, onAdminClick }: ChatProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [model, setModel] = useState('')
@@ -123,6 +124,11 @@ export default function Chat({ user, onLogout }: ChatProps) {
         </div>
         <div className={styles.headerRight}>
           <span className={styles.userEmail}>{user.email}</span>
+          {user.role === 'admin' && onAdminClick && (
+            <button onClick={onAdminClick} className={styles.adminButton}>
+              Admin
+            </button>
+          )}
           <button onClick={onLogout} className={styles.logoutButton}>
             Logout
           </button>

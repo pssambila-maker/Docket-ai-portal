@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react'
 import Login from './components/Login'
 import Chat from './components/Chat'
+import AdminDashboard from './components/AdminDashboard'
 import { getMe, User } from './lib/api'
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showAdmin, setShowAdmin] = useState(false)
 
   useEffect(() => {
     // Check for existing token on mount
@@ -39,6 +41,7 @@ export default function Home() {
   const handleLogout = () => {
     localStorage.removeItem('token')
     setUser(null)
+    setShowAdmin(false)
   }
 
   if (loading) {
@@ -61,5 +64,15 @@ export default function Home() {
     return <Login onLogin={handleLogin} />
   }
 
-  return <Chat user={user} onLogout={handleLogout} />
+  if (showAdmin) {
+    return <AdminDashboard user={user} onBack={() => setShowAdmin(false)} />
+  }
+
+  return (
+    <Chat
+      user={user}
+      onLogout={handleLogout}
+      onAdminClick={() => setShowAdmin(true)}
+    />
+  )
 }

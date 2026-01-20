@@ -22,7 +22,7 @@ MODEL_PROVIDERS = {
     # Anthropic models (Jan 2026)
     "claude-opus-4-5-20251101": "anthropic",
     "claude-sonnet-4-5-20250929": "anthropic",
-    "claude-haiku-3-5-20241022": "anthropic",
+    "claude-3-5-haiku-20241022": "anthropic",
     # Google models (Jan 2026)
     "gemini-2.5-flash": "google",
     "gemini-2.5-pro": "google",
@@ -304,9 +304,15 @@ class MultiLLMProvider:
             temperature=temperature,
         )
 
-        response_text = response.choices[0].message.content
+        # Handle potentially empty/None responses from OpenRouter
+        response_text = ""
+        if response.choices and len(response.choices) > 0:
+            choice = response.choices[0]
+            if choice.message and choice.message.content:
+                response_text = choice.message.content
+
         prompt_tokens = response.usage.prompt_tokens if response.usage else len(prompt.split()) * 2
-        completion_tokens = response.usage.completion_tokens if response.usage else len(response_text.split()) * 2
+        completion_tokens = response.usage.completion_tokens if response.usage else len(response_text.split()) * 2 if response_text else 0
 
         logger.info(f"OpenRouter call successful: model={model}, tokens={prompt_tokens}+{completion_tokens}")
         return response_text, prompt_tokens, completion_tokens
@@ -388,7 +394,7 @@ def get_available_models() -> list[str]:
         models.extend([
             "claude-opus-4-5-20251101",
             "claude-sonnet-4-5-20250929",
-            "claude-haiku-3-5-20241022",
+            "claude-3-5-haiku-20241022",
         ])
 
     # Google models (Jan 2026)

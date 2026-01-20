@@ -10,6 +10,7 @@ from sqlalchemy import text
 from app.db import engine, Base, SessionLocal
 from app.auth import router as auth_router
 from app.chat import router as chat_router
+from app.admin import router as admin_router
 
 # Configure logging
 logging.basicConfig(
@@ -126,6 +127,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 # Include routers
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 app.include_router(chat_router, prefix="/chat", tags=["Chat"])
+app.include_router(admin_router, prefix="/admin", tags=["Admin"])
 
 
 @app.get("/healthz")

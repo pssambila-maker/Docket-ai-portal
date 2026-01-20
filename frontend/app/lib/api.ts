@@ -145,3 +145,70 @@ export interface ChatHistoryItem {
 export async function getChatHistory(limit: number = 50): Promise<ApiResponse<ChatHistoryItem[]>> {
   return request<ChatHistoryItem[]>(`/chat/history?limit=${limit}`);
 }
+
+// Admin API
+export interface UserStats {
+  id: number;
+  email: string;
+  role: string;
+  created_at: string;
+  total_requests: number;
+  total_tokens: number;
+}
+
+export interface UsageByModel {
+  model: string;
+  request_count: number;
+  total_tokens: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+}
+
+export interface UsageByUser {
+  user_id: number;
+  email: string;
+  request_count: number;
+  total_tokens: number;
+}
+
+export interface DailyUsage {
+  date: string;
+  request_count: number;
+  total_tokens: number;
+}
+
+export interface AdminStats {
+  total_users: number;
+  total_requests: number;
+  total_tokens: number;
+  active_users_today: number;
+  requests_today: number;
+  tokens_today: number;
+}
+
+export interface AdminDashboard {
+  stats: AdminStats;
+  usage_by_model: UsageByModel[];
+  usage_by_user: UsageByUser[];
+  daily_usage: DailyUsage[];
+}
+
+export async function getAdminUsers(): Promise<ApiResponse<UserStats[]>> {
+  return request<UserStats[]>('/admin/users');
+}
+
+export async function getAdminStats(days: number = 7): Promise<ApiResponse<AdminDashboard>> {
+  return request<AdminDashboard>(`/admin/stats?days=${days}`);
+}
+
+export async function updateUserRole(userId: number, role: string): Promise<ApiResponse<{message: string}>> {
+  return request<{message: string}>(`/admin/users/${userId}/role?role=${role}`, {
+    method: 'PATCH',
+  });
+}
+
+export async function deleteUser(userId: number): Promise<ApiResponse<{message: string}>> {
+  return request<{message: string}>(`/admin/users/${userId}`, {
+    method: 'DELETE',
+  });
+}
