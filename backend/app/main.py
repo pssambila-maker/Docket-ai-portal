@@ -2,8 +2,9 @@ import logging
 import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from app.db import engine, Base, SessionLocal
@@ -20,18 +21,15 @@ logger = logging.getLogger(__name__)
 
 def init_db():
     """Initialize database tables."""
-    # Retry logic for database connection
     max_retries = 5
     retry_delay = 2
 
     for attempt in range(max_retries):
         try:
-            # Test connection
             with engine.connect() as conn:
                 conn.execute(text("SELECT 1"))
                 conn.commit()
 
-            # Create tables
             Base.metadata.create_all(bind=engine)
             logger.info("Database initialized successfully")
             return
@@ -50,11 +48,9 @@ def init_db():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan handler."""
-    # Startup
     logger.info("Starting AI Portal API...")
     init_db()
     yield
-    # Shutdown
     logger.info("Shutting down AI Portal API...")
 
 
@@ -75,20 +71,56 @@ app.add_middleware(
 )
 
 
+# Security headers middleware
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """Add security headers to all responses."""
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
+
+
 # Request logging middleware
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     """Log all requests with timing."""
     start_time = time.time()
-    response = await call_next(request)
-    duration = time.time() - start_time
 
-    logger.info(
-        f"{request.method} {request.url.path} - "
-        f"Status: {response.status_code} - "
-        f"Duration: {duration:.3f}s"
+    try:
+        response = await call_next(request)
+        duration = time.time() - start_time
+
+        logger.info(
+            f"{request.method} {request.url.path} - "
+            f"Status: {response.status_code} - "
+            f"Duration: {duration:.3f}s"
+        )
+        return response
+    except Exception as e:
+        duration = time.time() - start_time
+        logger.error(
+            f"{request.method} {request.url.path} - "
+            f"Error: {str(e)} - "
+            f"Duration: {duration:.3f}s"
+        )
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"detail": "Internal server error"}
+        )
+
+
+# Global exception handler
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Handle uncaught exceptions."""
+    logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"detail": "An unexpected error occurred"}
     )
-    return response
 
 
 # Include routers
@@ -100,7 +132,6 @@ app.include_router(chat_router, prefix="/chat", tags=["Chat"])
 async def health_check():
     """Health check endpoint for container orchestration."""
     try:
-        # Check database connection
         db = SessionLocal()
         db.execute(text("SELECT 1"))
         db.close()
